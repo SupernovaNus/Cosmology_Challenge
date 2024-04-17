@@ -1,0 +1,65 @@
+# FAIR-UNIVERSE Cosmology competition yaml file
+# Created by: Ihsan Ullah
+# Created on: April 17, 2024
+
+version: 2
+title: FAIR Universe - Cosmology Challenge
+description: FAIR Universe - Cosmology Challenge Organized by FAIR Universe
+image: logo.png
+registration_auto_approve: False   
+enable_detailed_results: True
+docker_image: nersc/fair_universe:1298f0a8
+
+
+terms: pages/terms.md
+pages:  
+  - title: Overview
+    file: pages/overview.md
+  - title: Evaluation
+    file: pages/evaluation.md
+  - title: Material
+    file: pages/material.md
+  - title: Starting Kit
+    file: pages/starting_kit.md
+  - title: Terms
+    file: pages/terms.md
+  
+
+phases:
+  - index: 0
+    name: Phase 1
+    description: Feedback Phase
+    start: 2024-04-17
+    end: 2024-04-30
+    tasks:
+      - 0
+
+
+tasks:
+  - index: 0
+    name: FU Cosmology Task
+    description: Estimate Coverage
+    input_data: input_data/
+    reference_data: reference_data/  
+    scoring_program: scoring_program/
+    ingestion_program: ingestion_program/
+
+
+leaderboards:
+  - index: 0 
+    title: Results
+    key: main
+    submission_rule: "Force_Latest_Multiple"
+    columns:
+      - index: 0
+        title: Quantile Score
+        key: quantiles_score
+      - index: 1
+        title: Interval
+        key: interval
+      - index: 2
+        title: Coverage
+        key: coverage
+      - index: 3
+        title: Run Time (mins)
+        key: ingestion_duration
