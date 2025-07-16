@@ -5,7 +5,7 @@
 # - inputs and outputs of the functions
 # ------------------------------
 
-import random
+import numpy as np
 
 
 class Model:
@@ -63,19 +63,31 @@ class Model:
         Returns:
             None
         """
+
+        # To access train data and labels use the following line of code
+        # data = train_data["data"]
+        # labels = train_data["labels"]
         pass
 
     def predict(self, test_data=None):
         """
         Params:
-            test_set (dict): A dictionary containing the test data, and weights
+            test_data (dict): A dictionary containing the test data
 
         Functionality:
             this function can be used for predictions using the test sets
 
         Returns:
-            list: a list of predictions
+            a tupple of lists: (means list, errorbars list) 
+            size of each list = (test_samples, 2) 
 
         """
 
-        return random.choices([0, 1], k=10)
+        # To access test data use the following line of code
+        # data = test_data["data"]
+
+        num_test_data = 100
+        means = np.random.uniform(low=0.0, high=10.0, size=(num_test_data, 2))
+        errorbars = np.random.uniform(low=0.1, high=1.0, size=(num_test_data, 2))
+
+        return (means, errorbars)

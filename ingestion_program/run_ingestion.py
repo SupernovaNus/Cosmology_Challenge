@@ -61,11 +61,8 @@ if __name__ == "__main__":
     # Start timer
     ingestion.start_timer()
 
-    # Load train data
-    ingestion.load_train_data()
-
-    # Load test data
-    ingestion.load_test_data()
+    # Load train and test data
+    ingestion.load_train_and_test_data(input_dir)
 
     # initialize submission
     ingestion.init_submission(Model)
