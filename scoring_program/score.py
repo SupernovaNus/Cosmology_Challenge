@@ -79,9 +79,24 @@ class Scoring:
         """
         print("[*] Reading ingestion result")
 
-        ingestion_result_file = os.path.join(predictions_dir, "ingestion_result.json")
+        ingestion_result_file = os.path.join(predictions_dir, "result.json")
         with open(ingestion_result_file) as f:
             self.ingestion_result = json.load(f)
+
+    def check_result(self):
+        if "means" not in self.ingestion_result:
+            raise KeyError("[-] Means not found in the result!")
+
+        if "errorbars" not in self.ingestion_result:
+            raise KeyError("[-] Errorbars not found in the result!")
+
+        test_set_size = self.reference_data.shape[0]
+
+        if test_set_size != len(self.ingestion_result["means"]):
+            raise ValueError(f"[-] Number of samples in means should be {test_set_size}")
+
+        if test_set_size != len(self.ingestion_result["errorbars"]):
+            raise ValueError(f"[-] Number of samples in errorbars should be {test_set_size}")
 
     def compute_scores(self):
         """

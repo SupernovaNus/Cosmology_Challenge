@@ -51,22 +51,17 @@ class Model:
         """
         pass
 
-    def fit(self, train_data=None):
+    def fit(self):
         """
         Params:
-            train_data:
-                A dictionary with data, labels
+            None
 
         Functionality:
-            This function can be used to train a model. You can ignore this function if you already have a pre-trained model.
+            This function can be used to load a pre-trained model. You can ignore this function if you already have loaded a pre-trained model in the init function.
 
         Returns:
             None
         """
-
-        # To access train data and labels use the following line of code
-        # data = train_data["data"]
-        # labels = train_data["labels"]
         pass
 
     def predict(self, test_data=None):

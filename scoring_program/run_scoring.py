@@ -65,6 +65,9 @@ if __name__ == "__main__":
     # Load ingestion result
     scoring.load_ingestion_result(prediction_dir)
 
+    # Check the format of result
+    scoring.check_result()
+
     # Compute Scores
     scoring.compute_scores()
 

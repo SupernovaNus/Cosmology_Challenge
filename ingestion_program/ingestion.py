@@ -135,7 +135,8 @@ class Ingestion:
         Fit the submitted model.
         """
         print("[*] Fitting Submmited Model")
-        self.model.fit(self.train_data)
+        # self.model.fit(self.train_data)
+        self.model.fit()
 
     def predict_submission(self):
         """
@@ -168,6 +169,6 @@ class Ingestion:
         Args:
             output_dir (str): The output directory to save the result files.
         """
-        result_file = os.path.join(output_dir, "ingestion_result.json")
+        result_file = os.path.join(output_dir, "result.json")
         with open(result_file, "w") as f:
             f.write(json.dumps(self.ingestion_result, indent=4))
