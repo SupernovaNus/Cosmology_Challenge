@@ -57,19 +57,6 @@ class Scoring:
         reference_data_file = os.path.join(reference_dir, "test_label.npy")
         self.reference_data = np.load(reference_data_file)
 
-    def load_ingestion_duration(self, predictions_dir):
-        """
-        Load the ingestion duration.
-
-        Args:
-            predictions_dir (str): The predictions directory name.
-        """
-        print("[*] Reading ingestion duration")
-
-        ingestion_duration_file = os.path.join(predictions_dir, "ingestion_duration.json")
-        with open(ingestion_duration_file) as f:
-            self.ingestion_duration = json.load(f)["ingestion_duration"]
-
     def load_ingestion_result(self, predictions_dir):
         """
         Load the ingestion result.

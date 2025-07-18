@@ -59,9 +59,6 @@ if __name__ == "__main__":
     # Load reference data
     scoring.load_reference_data(reference_dir)
 
-    # Load ingestion duration
-    scoring.load_ingestion_duration(prediction_dir)
-
     # Load ingestion result
     scoring.load_ingestion_result(prediction_dir)
 
