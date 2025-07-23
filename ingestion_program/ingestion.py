@@ -3,9 +3,8 @@
 # ------------------------------------------
 import os
 import json
+import numpy as np
 from datetime import datetime as dt
-import logging
-logger = logging.getLogger(__name__)
 
 
 class Ingestion:
@@ -33,6 +32,8 @@ class Ingestion:
         self.model = None
         self.train_data = None
         self.test_data = None
+        self.means = None
+        self.errorbars = None
 
     def start_timer(self):
         """
@@ -54,11 +55,11 @@ class Ingestion:
             timedelta: The duration of the ingestion process.
         """
         if self.start_time is None:
-            logger.warning("Timer was never started. Returning None")
+            print("[-] Timer was never started. Returning None")
             return None
 
         if self.end_time is None:
-            logger.warning("Timer was never stopped. Returning None")
+            print("[-] Timer was never stopped. Returning None")
             return None
 
         return self.end_time - self.start_time
@@ -77,21 +78,46 @@ class Ingestion:
             with open(duration_file, "w") as f:
                 f.write(json.dumps({"ingestion_duration": duration_in_mins}, indent=4))
 
-    def load_train_data(self):
+    def load_train_and_test_data(self, input_dir):
         """
-        Load the training data.
+        Load the training and testing data.
 
         """
-        logger.info("Loading Train data")
-        self.train_data = None  # TODO: replace by actual data loading logic
+        print("[*] Loading Train data")
 
-    def load_test_data(self):
-        """
-        Load the test data.
+        mask_file = os.path.join(input_dir, "WIDE12H_bin2_2arcmin_mask.npy")
+        kappa_file = os.path.join(input_dir, "WIDE12H_bin2_2arcmin_kappa.npy")
+        labels_file = os.path.join(input_dir, "label.npy")
 
-        """
-        logger.info("Loading Test data")
-        self.test_data = None  # TODO: replace by actual data loading logic
+        shape = [1424, 176]
+
+        mask = np.load(mask_file)
+        kappa = np.zeros((101, 256, *shape), dtype=np.float16)
+
+        # This is the train data; shape = (101, 256, 1424, 176)
+        # 101 = realizations of 2 parameters of interest
+        # 256 = realizations of 3 nuisance parameters
+        # (1424, 176) = image dimension
+        kappa[:, :, mask] = np.load(kappa_file)
+
+        # Train label shape = (101, 256, 2 POIs + 3 predefined NPs) = (101, 256, 5)
+        labels = np.load(labels_file)
+
+        self.train_data = {
+            "data": kappa,
+            "labels": labels
+        }
+
+        print("[*] Loading Test data")
+
+        rng = np.random.default_rng(seed=5566)
+        Ntest = 100
+        index = rng.choice(101*256, size=Ntest, replace=False)
+        test_data = kappa.reshape(101*256, *shape)[index]
+
+        self.test_data = {
+            "data": test_data,
+        }
 
     def init_submission(self, Model):
         """
@@ -100,7 +126,7 @@ class Ingestion:
         Args:
             Model (object): The model class.
         """
-        logger.info("Initializing Submmited Model")
+        print("[*] Initializing Submmited Model")
 
         self.model = Model()
 
@@ -108,24 +134,32 @@ class Ingestion:
         """
         Fit the submitted model.
         """
-        logger.info("Fitting Submmited Model")
-        self.model.fit(self.train_data)
+        print("[*] Fitting Submmited Model")
+        # self.model.fit(self.train_data)
+        self.model.fit()
 
     def predict_submission(self):
         """
         Make predictions using the submitted model.
         """
-        logger.info("Calling predict method of submitted model")
-        self.predictions = self.model.predict(self.test_data)
+        print("[*] Calling predict method of submitted model")
+        self.means, self.errorbars = self.model.predict(self.test_data)
 
     def compute_result(self):
         """
         Compute the ingestion result.
         """
-        logger.info("Computing Ingestion Result")
+        print("[*] Computing Ingestion Result")
+
+        def to_list(x):
+            try:
+                return x.tolist()
+            except AttributeError:
+                return x
 
         self.ingestion_result = {
-            "predictions": self.predictions
+            "means": to_list(self.means),
+            "errorbars": to_list(self.errorbars)
         }
 
     def save_result(self, output_dir=None):
@@ -135,6 +169,6 @@ class Ingestion:
         Args:
             output_dir (str): The output directory to save the result files.
         """
-        result_file = os.path.join(output_dir, "ingestion_result.json")
+        result_file = os.path.join(output_dir, "result.json")
         with open(result_file, "w") as f:
             f.write(json.dumps(self.ingestion_result, indent=4))

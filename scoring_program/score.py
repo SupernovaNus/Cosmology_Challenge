@@ -3,10 +3,8 @@
 # ------------------------------------------
 import os
 import json
-import random
-import logging
+import numpy as np
 from datetime import datetime as dt
-logger = logging.getLogger(__name__)
 
 
 class Scoring:
@@ -39,11 +37,11 @@ class Scoring:
 
     def get_duration(self):
         if self.start_time is None:
-            logger.warning("Timer was never started. Returning None")
+            print("[-] Timer was never started. Returning None")
             return None
 
         if self.end_time is None:
-            logger.warning("Timer was never stoped. Returning None")
+            print("[-] Timer was never stoped. Returning None")
             return None
 
         return self.end_time - self.start_time
@@ -55,21 +53,9 @@ class Scoring:
         Args:
             reference_dir (str): The reference data directory name.
         """
-        logger.info("Reading reference data")
-        self.reference_data = None  # TODO: replace with the actual data loading logic
-
-    def load_ingestion_duration(self, predictions_dir):
-        """
-        Load the ingestion duration.
-
-        Args:
-            predictions_dir (str): The predictions directory name.
-        """
-        logger.info("Reading ingestion duration")
-
-        ingestion_duration_file = os.path.join(predictions_dir, "ingestion_duration.json")
-        with open(ingestion_duration_file) as f:
-            self.ingestion_duration = json.load(f)["ingestion_duration"]
+        print("[*] Reading reference data")
+        reference_data_file = os.path.join(reference_dir, "test_label.npy")
+        self.reference_data = np.load(reference_data_file)
 
     def load_ingestion_result(self, predictions_dir):
         """
@@ -78,39 +64,55 @@ class Scoring:
         Args:
             predictions_dir (str): The predictions directory name.
         """
-        logger.info("Reading ingestion result")
+        print("[*] Reading ingestion result")
 
-        ingestion_result_file = os.path.join(predictions_dir, "ingestion_result.json")
+        ingestion_result_file = os.path.join(predictions_dir, "result.json")
         with open(ingestion_result_file) as f:
             self.ingestion_result = json.load(f)
+
+    def check_result(self):
+        if "means" not in self.ingestion_result:
+            raise KeyError("[-] Means not found in the result!")
+
+        if "errorbars" not in self.ingestion_result:
+            raise KeyError("[-] Errorbars not found in the result!")
+
+        test_set_size = self.reference_data.shape[0]
+
+        if test_set_size != len(self.ingestion_result["means"]):
+            raise ValueError(f"[-] Number of samples in means should be {test_set_size}")
+
+        if test_set_size != len(self.ingestion_result["errorbars"]):
+            raise ValueError(f"[-] Number of samples in errorbars should be {test_set_size}")
 
     def compute_scores(self):
         """
         Compute the scores for the competition.
 
         """
-        def _accuracy(predictions, ground_truth):
-            correct = sum(p == g for p, g in zip(predictions, ground_truth))
-            return correct / len(ground_truth)
+        def _score_phase1(true_cosmo, infer_cosmo, errorbar):
+            return - np.sum((true_cosmo - infer_cosmo) ** 2 / errorbar ** 2 + np.log(errorbar), 1)
 
-        logger.info("Computing scores")
-        predictions = self.ingestion_result["predictions"]
-        ground_truth = random.choices([0, 1], k=10)  # TODO: replace by the actual ground_truth
+        print("[*] Computing scores")
+        means = np.array(self.ingestion_result["means"])
+        errorbars = np.array(self.ingestion_result["errorbars"])
+        score = _score_phase1(self.reference_data, means, errorbars)
 
-        # TODO: replace by actual score
-        score = _accuracy(predictions, ground_truth)
+        avg_score = np.mean(score)
+        avg_errorbar = np.mean(errorbars, 0)
 
         print("------------------")
-        print(f"Accuracy Score: {score}")
+        print(f"Avg Score: {avg_score}")
+        print(f"Avg Errorbar: {avg_errorbar}")
         print("------------------")
 
         self.scores_dict = {
-            "score": score
+            "avg_score": avg_score
         }
 
     def write_scores(self, output_dir):
 
-        logger.info("Writing scores")
+        print("[*] Writing scores")
         score_file = os.path.join(output_dir, "scores.json")
         with open(score_file, "w") as f_score:
             f_score.write(json.dumps(self.scores_dict, indent=4))
