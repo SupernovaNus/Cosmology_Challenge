@@ -37,10 +37,12 @@ if __name__ == "__main__":
 
     if not args.codabench:
         prediction_dir = os.path.join(root_dir_name, "sample_result_submission")
+        input_dir = os.path.join(root_dir_name, "input_data")
         reference_dir = os.path.join(root_dir_name, "reference_data")
         output_dir = os.path.join(root_dir_name, "scoring_output")
     else:
         prediction_dir = "/app/input/res"
+        input_dir = "/app/data"
         reference_dir = "/app/input/ref"
         output_dir = "/app/output"
 
@@ -55,6 +57,9 @@ if __name__ == "__main__":
 
     # Start timer
     scoring.start_timer()
+
+    # Load training labels
+    scoring.load_training_labels(input_dir)
 
     # Load reference data
     scoring.load_reference_data(reference_dir)
