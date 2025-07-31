@@ -56,6 +56,9 @@ if __name__ == "__main__":
     # Start timer
     scoring.start_timer()
 
+    # Load training labels
+    scoring.load_training_labels(reference_dir)
+
     # Load reference data
     scoring.load_reference_data(reference_dir)
 
