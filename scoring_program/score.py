@@ -5,7 +5,8 @@ import os
 import json
 import numpy as np
 from datetime import datetime as dt
-
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error, r2_score
 
 class Scoring:
     """
@@ -14,6 +15,7 @@ class Scoring:
     Atributes:
         * start_time (datetime): The start time of the scoring process.
         * end_time (datetime): The end time of the scoring process.
+        * training_labels (np.array): The training labels used for standardization.
         * reference_data (dict): The reference data.
         * ingestion_result (dict): The ingestion result.
         * ingestion_duration (float): The ingestion duration.
@@ -24,6 +26,7 @@ class Scoring:
         # Initialize class variables
         self.start_time = None
         self.end_time = None
+        self.training_labels = None
         self.reference_data = None
         self.ingestion_result = None
         self.ingestion_duration = None
@@ -45,6 +48,18 @@ class Scoring:
             return None
 
         return self.end_time - self.start_time
+
+    def load_training_labels(self, input_dir):
+        """
+        Load the training_labels (for standardization).
+
+        Args:
+            input_dir (str): The input data directory name.
+        """
+        print("[*] Reading training labels from input directory")
+        training_labels_file = os.path.join(input_dir, "label.npy")
+        training_labels = np.load(training_labels_file)                     # float64 (101, 256, 5)
+        self.training_labels = training_labels.reshape(101*256, -1)[:, :2]  # float64 (101*256, 2)
 
     def load_reference_data(self, reference_dir):
         """
@@ -90,8 +105,26 @@ class Scoring:
         Compute the scores for the competition.
 
         """
+
+        self.label_scaler = StandardScaler()
+        self.label_scaler.fit(self.training_labels)
+
+        # Compute the score for Phase 1. 
+        # The rank on the leaderboard is sorted by this.
         def _score_phase1(true_cosmo, infer_cosmo, errorbar):
             return - np.sum((true_cosmo - infer_cosmo) ** 2 / errorbar ** 2 + np.log(errorbar), 1)
+
+        # Compute the mean of the MSEs of 2 POIs (both are standardized).
+        # This is only for reference on the leaderboard.
+        def _mse_phase1(true_cosmo, infer_cosmo):
+            true_cosmo_scaled = self.label_scaler.transform(true_cosmo)
+            infer_cosmo_scaled = self.label_scaler.transform(infer_cosmo)
+            return mean_squared_error(true_cosmo_scaled, infer_cosmo_scaled)
+        
+        # Compute the mean of the R^2 coefficients of 2 POIs (standardization would not change the R^2). 
+        # This is only for reference on the leaderboard.
+        def _r2_phase1(true_cosmo, infer_cosmo):
+            return r2_score(true_cosmo, infer_cosmo)
 
         print("[*] Computing scores")
         means = np.array(self.ingestion_result["means"])
@@ -101,13 +134,20 @@ class Scoring:
         avg_score = np.mean(score)
         avg_errorbar = np.mean(errorbars, 0)
 
+        mse = _mse_phase1(self.reference_data, means)
+        r2_coeff = _r2_phase1(self.reference_data, means)
+
         print("------------------")
         print(f"Avg Score: {avg_score}")
         print(f"Avg Errorbar: {avg_errorbar}")
+        print(f"Mean squared error: {mse}")
+        print(f"R-squared: {r2_coeff}")
         print("------------------")
 
         self.scores_dict = {
-            "avg_score": avg_score
+            "avg_score": avg_score,            
+            "MSE": mse,
+            "R_squared": r2_coeff
         }
 
     def write_scores(self, output_dir):
