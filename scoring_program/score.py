@@ -8,6 +8,7 @@ from datetime import datetime as dt
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
 
+
 class Scoring:
     """
     This class is used to compute the scores for the competition.
@@ -49,15 +50,15 @@ class Scoring:
 
         return self.end_time - self.start_time
 
-    def load_training_labels(self, input_dir):
+    def load_training_labels(self, reference_dir):
         """
         Load the training_labels (for standardization).
 
         Args:
-            input_dir (str): The input data directory name.
+            reference_dir (str): The reference data directory name.
         """
-        print("[*] Reading training labels from input directory")
-        training_labels_file = os.path.join(input_dir, "label.npy")
+        print("[*] Reading training labels")
+        training_labels_file = os.path.join(reference_dir, "label.npy")
         training_labels = np.load(training_labels_file)                     # float64 (101, 256, 5)
         self.training_labels = training_labels.reshape(101*256, -1)[:, :2]  # float64 (101*256, 2)
 
@@ -109,7 +110,7 @@ class Scoring:
         self.label_scaler = StandardScaler()
         self.label_scaler.fit(self.training_labels)
 
-        # Compute the score for Phase 1. 
+        # Compute the score for Phase 1.
         # The rank on the leaderboard is sorted by this.
         def _score_phase1(true_cosmo, infer_cosmo, errorbar):
             return - np.sum((true_cosmo - infer_cosmo) ** 2 / errorbar ** 2 + np.log(errorbar), 1)
@@ -120,8 +121,8 @@ class Scoring:
             true_cosmo_scaled = self.label_scaler.transform(true_cosmo)
             infer_cosmo_scaled = self.label_scaler.transform(infer_cosmo)
             return mean_squared_error(true_cosmo_scaled, infer_cosmo_scaled)
-        
-        # Compute the mean of the R^2 coefficients of 2 POIs (standardization would not change the R^2). 
+
+        # Compute the mean of the R^2 coefficients of 2 POIs (standardization would not change the R^2).
         # This is only for reference on the leaderboard.
         def _r2_phase1(true_cosmo, infer_cosmo):
             return r2_score(true_cosmo, infer_cosmo)
@@ -145,7 +146,7 @@ class Scoring:
         print("------------------")
 
         self.scores_dict = {
-            "avg_score": avg_score,            
+            "avg_score": avg_score,
             "MSE": mse,
             "R_squared": r2_coeff
         }
